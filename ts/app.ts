@@ -140,7 +140,6 @@ class TodoList {
     this.connectAddTodoButton();
     this.connectDeleteTodoButton();
     this.render();
-    console.log(this.todos);
   }
 
   saveTodosToLocalStorage(todos: Todo[]) {
@@ -154,6 +153,10 @@ class TodoList {
   addNewTodo() {
     const addTodoInput = document.getElementById('addTodoInput') as HTMLInputElement;
     const todoListElement = document.getElementById('todoList') as HTMLUListElement;
+
+    if (this.todos.length === 0) {
+      todoListElement.removeChild(todoListElement.firstElementChild);
+    }
 
     const newTodoData = {
       id: Date.now(),
@@ -169,10 +172,7 @@ class TodoList {
 
     addTodoInput.value = '';
 
-    const todoItemElement = TodoItem.render(newTodoData);
-    const todoItemElementMainButton = todoItemElement.lastElementChild.lastElementChild.firstElementChild;
-    todoItemElementMainButton.addEventListener('click', () => this.switchTodoStatus(newTodoData.id));
-    todoListElement.appendChild(todoItemElement);
+    this.renderTodoItems(newTodoData, todoListElement);
   }
 
   connectAddTodoButton() {
@@ -183,23 +183,24 @@ class TodoList {
     });
   }
 
-  deleteTodo(event) {
+  deleteTodo(event, todoListElement: HTMLUListElement) {
     const target = event.target;
 
-    if (target.tagName === 'BUTTON' && target.dataset.buttonRole === 'delete') {
-      const targetLi = target.closest('li');
+    if (target.tagName === 'BUTTON') {
+      if (target.dataset.buttonRole === 'delete') {
+        const targetLi = target.closest('li');
+        this.todos = this.todos.filter((todo) => todo.id !== +targetLi.dataset.id);
+        this.saveTodosToLocalStorage(this.todos);
+        targetLi.parentElement.removeChild(targetLi);
 
-      this.todos = this.todos.filter((todo) => todo.id !== +targetLi.dataset.id);
-
-      this.saveTodosToLocalStorage(this.todos);
-
-      targetLi.parentElement.removeChild(targetLi);
+        this.setEmptyListContent(todoListElement);
+      }
     }
   }
 
   connectDeleteTodoButton() {
     const todoListElement = document.getElementById('todoList') as HTMLUListElement;
-    todoListElement.addEventListener('click', this.deleteTodo.bind(this));
+    todoListElement.addEventListener('click', (event) => this.deleteTodo(event, todoListElement));
   }
 
   switchTodoStatus(todoId: number) {
@@ -220,13 +221,30 @@ class TodoList {
     targetTodoElementActions.firstElementChild.addEventListener('click', () => this.switchTodoStatus(todoId));
   }
 
+  setEmptyListContent(todoListElement: HTMLUListElement) {
+    if (this.todos.length === 0) {
+      const todoElementContent = document.createElement('li');
+      todoElementContent.classList.toggle('todo-list__item');
+      todoElementContent.appendChild(document.createTextNode('There are no tasks to do. Consider adding some!'));
+      todoElementContent.dataset.role = 'emptyList';
+      todoListElement.appendChild(todoElementContent);
+    }
+  }
+
+  renderTodoItems(todo: Todo, todoListElement) {
+    const todoItemElement = TodoItem.render(todo);
+    const todoItemElementMainButton = todoItemElement.lastElementChild.lastElementChild.firstElementChild;
+    todoItemElementMainButton.addEventListener('click', () => this.switchTodoStatus(todo.id));
+    todoListElement.appendChild(todoItemElement);
+  }
+
   render() {
     const todoListElement = document.getElementById('todoList') as HTMLUListElement;
+
+    this.setEmptyListContent(todoListElement);
+
     this.todos.forEach((todo) => {
-      const todoItemElement = TodoItem.render(todo);
-      const todoItemElementMainButton = todoItemElement.lastElementChild.lastElementChild.firstElementChild;
-      todoItemElementMainButton.addEventListener('click', () => this.switchTodoStatus(todo.id));
-      todoListElement.appendChild(todoItemElement);
+      this.renderTodoItems(todo, todoListElement);
     });
   }
 }

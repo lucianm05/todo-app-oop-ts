@@ -120,7 +120,6 @@ var TodoList = /** @class */ (function () {
         this.connectAddTodoButton();
         this.connectDeleteTodoButton();
         this.render();
-        console.log(this.todos);
     }
     TodoList.prototype.saveTodosToLocalStorage = function (todos) {
         localStorage.setItem('todos', JSON.stringify(todos));
@@ -129,9 +128,11 @@ var TodoList = /** @class */ (function () {
         return JSON.parse(localStorage.getItem('todos'));
     };
     TodoList.prototype.addNewTodo = function () {
-        var _this = this;
         var addTodoInput = document.getElementById('addTodoInput');
         var todoListElement = document.getElementById('todoList');
+        if (this.todos.length === 0) {
+            todoListElement.removeChild(todoListElement.firstElementChild);
+        }
         var newTodoData = {
             id: Date.now(),
             text: addTodoInput.value,
@@ -141,10 +142,7 @@ var TodoList = /** @class */ (function () {
         this.todos.push(newTodoItem);
         this.saveTodosToLocalStorage(this.todos);
         addTodoInput.value = '';
-        var todoItemElement = TodoItem.render(newTodoData);
-        var todoItemElementMainButton = todoItemElement.lastElementChild.lastElementChild.firstElementChild;
-        todoItemElementMainButton.addEventListener('click', function () { return _this.switchTodoStatus(newTodoData.id); });
-        todoListElement.appendChild(todoItemElement);
+        this.renderTodoItems(newTodoData, todoListElement);
     };
     TodoList.prototype.connectAddTodoButton = function () {
         var _this = this;
@@ -154,18 +152,22 @@ var TodoList = /** @class */ (function () {
             _this.addNewTodo();
         });
     };
-    TodoList.prototype.deleteTodo = function (event) {
+    TodoList.prototype.deleteTodo = function (event, todoListElement) {
         var target = event.target;
-        if (target.tagName === 'BUTTON' && target.dataset.buttonRole === 'delete') {
-            var targetLi_1 = target.closest('li');
-            this.todos = this.todos.filter(function (todo) { return todo.id !== +targetLi_1.dataset.id; });
-            this.saveTodosToLocalStorage(this.todos);
-            targetLi_1.parentElement.removeChild(targetLi_1);
+        if (target.tagName === 'BUTTON') {
+            if (target.dataset.buttonRole === 'delete') {
+                var targetLi_1 = target.closest('li');
+                this.todos = this.todos.filter(function (todo) { return todo.id !== +targetLi_1.dataset.id; });
+                this.saveTodosToLocalStorage(this.todos);
+                targetLi_1.parentElement.removeChild(targetLi_1);
+                this.setEmptyListContent(todoListElement);
+            }
         }
     };
     TodoList.prototype.connectDeleteTodoButton = function () {
+        var _this = this;
         var todoListElement = document.getElementById('todoList');
-        todoListElement.addEventListener('click', this.deleteTodo.bind(this));
+        todoListElement.addEventListener('click', function (event) { return _this.deleteTodo(event, todoListElement); });
     };
     TodoList.prototype.switchTodoStatus = function (todoId) {
         var _this = this;
@@ -185,14 +187,28 @@ var TodoList = /** @class */ (function () {
         targetTodoElementActions.prepend(TodoItemMainButton.render(targetTodo.status));
         targetTodoElementActions.firstElementChild.addEventListener('click', function () { return _this.switchTodoStatus(todoId); });
     };
+    TodoList.prototype.setEmptyListContent = function (todoListElement) {
+        if (this.todos.length === 0) {
+            var todoElementContent = document.createElement('li');
+            todoElementContent.classList.toggle('todo-list__item');
+            todoElementContent.appendChild(document.createTextNode('There are no tasks to do. Consider adding some!'));
+            todoElementContent.dataset.role = 'emptyList';
+            todoListElement.appendChild(todoElementContent);
+        }
+    };
+    TodoList.prototype.renderTodoItems = function (todo, todoListElement) {
+        var _this = this;
+        var todoItemElement = TodoItem.render(todo);
+        var todoItemElementMainButton = todoItemElement.lastElementChild.lastElementChild.firstElementChild;
+        todoItemElementMainButton.addEventListener('click', function () { return _this.switchTodoStatus(todo.id); });
+        todoListElement.appendChild(todoItemElement);
+    };
     TodoList.prototype.render = function () {
         var _this = this;
         var todoListElement = document.getElementById('todoList');
+        this.setEmptyListContent(todoListElement);
         this.todos.forEach(function (todo) {
-            var todoItemElement = TodoItem.render(todo);
-            var todoItemElementMainButton = todoItemElement.lastElementChild.lastElementChild.firstElementChild;
-            todoItemElementMainButton.addEventListener('click', function () { return _this.switchTodoStatus(todo.id); });
-            todoListElement.appendChild(todoItemElement);
+            _this.renderTodoItems(todo, todoListElement);
         });
     };
     return TodoList;
