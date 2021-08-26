@@ -170,6 +170,8 @@ class TodoList {
     addTodoInput.value = '';
 
     const todoItemElement = TodoItem.render(newTodoData);
+    const todoItemElementMainButton = todoItemElement.lastElementChild.lastElementChild.firstElementChild;
+    todoItemElementMainButton.addEventListener('click', () => this.switchTodoStatus(newTodoData.id));
     todoListElement.appendChild(todoItemElement);
   }
 
@@ -200,7 +202,7 @@ class TodoList {
     todoListElement.addEventListener('click', this.deleteTodo.bind(this));
   }
 
-  switchStatus(todoId: number) {
+  switchTodoStatus(todoId: number) {
     const targetTodo = this.todos.find((todo) => todo.id === todoId);
     if (targetTodo.status === Status.ACTIVE) {
       targetTodo.status = Status.FINISHED;
@@ -208,6 +210,14 @@ class TodoList {
       targetTodo.status = Status.ACTIVE;
     }
     this.saveTodosToLocalStorage(this.todos);
+
+    const targetTodoElement = document.querySelector(`[data-id="${todoId}"]`);
+    targetTodoElement.removeChild(targetTodoElement.firstElementChild);
+    targetTodoElement.prepend(TodoItemStatus.render(targetTodo.status));
+    const targetTodoElementActions = targetTodoElement.lastElementChild.lastElementChild;
+    targetTodoElementActions.removeChild(targetTodoElementActions.firstElementChild);
+    targetTodoElementActions.prepend(TodoItemMainButton.render(targetTodo.status));
+    targetTodoElementActions.firstElementChild.addEventListener('click', () => this.switchTodoStatus(todoId));
   }
 
   render() {
@@ -215,7 +225,7 @@ class TodoList {
     this.todos.forEach((todo) => {
       const todoItemElement = TodoItem.render(todo);
       const todoItemElementMainButton = todoItemElement.lastElementChild.lastElementChild.firstElementChild;
-      todoItemElementMainButton.addEventListener('click', () => this.switchStatus(todo.id));
+      todoItemElementMainButton.addEventListener('click', () => this.switchTodoStatus(todo.id));
       todoListElement.appendChild(todoItemElement);
     });
   }
