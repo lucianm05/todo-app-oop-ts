@@ -9,36 +9,11 @@ interface Todo {
   status: Status;
 }
 
-class TodoItem {
-  id: number;
-  text: string;
-  status: Status;
-
-  constructor(newTodoData: Todo) {
-    this.id = newTodoData.id;
-    this.text = newTodoData.text;
-    this.status = newTodoData.status;
-    this.render();
-  }
-
-  static createElement(newTodoData: Todo) {
-    const newTodoLi = document.createElement('li');
-    newTodoLi.classList.toggle('todo-list__item');
-
+class TodoItemStatus {
+  static render(status: Status) {
     const newTodoStatus = document.createElement('span');
 
-    const newTodoContent = document.createElement('div');
-    newTodoContent.classList.toggle('todo-list__item-content');
-
-    const newTodoSpan = document.createElement('span');
-    newTodoSpan.appendChild(document.createTextNode(newTodoData.text));
-    newTodoContent.appendChild(newTodoSpan);
-
-    const newTodoActions = document.createElement('div');
-    newTodoActions.classList.toggle('todo-list__item-actions');
-    const newTodoButton1 = document.createElement('button');
-
-    switch (newTodoData.status) {
+    switch (status) {
       case Status.ACTIVE:
         {
           newTodoStatus.classList.toggle('todo-list__item-status');
@@ -48,14 +23,6 @@ class TodoItem {
           newTodoStatusImage.src = './icons/icon-clock.svg';
           newTodoStatusImage.alt = 'Image of a clock.';
           newTodoStatus.appendChild(newTodoStatusImage);
-          newTodoLi.prepend(newTodoStatus);
-
-          newTodoButton1.setAttribute('aria-label', 'Press to mark to do as finished.');
-          newTodoButton1.dataset.buttonRole = 'finish';
-          const newTodoButton1Image = document.createElement('img');
-          newTodoButton1Image.src = './icons/icon-checkmark.svg';
-          newTodoButton1Image.alt = 'Image of a checkmark.';
-          newTodoButton1.appendChild(newTodoButton1Image);
         }
         break;
 
@@ -68,19 +35,48 @@ class TodoItem {
           newTodoStatusImage.src = './icons/icon-checkmark.svg';
           newTodoStatusImage.alt = 'Image of a checkmark.';
           newTodoStatus.appendChild(newTodoStatusImage);
-          newTodoLi.prepend(newTodoStatus);
-
-          newTodoButton1.setAttribute('aria-label', 'Press to mark to do in progress.');
-          newTodoButton1.dataset.buttonRole = 'progress';
-          const newTodoButton1Image = document.createElement('img');
-          newTodoButton1Image.src = './icons/icon-clock.svg';
-          newTodoButton1Image.alt = 'Image of a clock.';
-          newTodoButton1.appendChild(newTodoButton1Image);
         }
         break;
     }
-    newTodoActions.appendChild(newTodoButton1);
 
+    return newTodoStatus;
+  }
+}
+
+class TodoItemMainButton {
+  static render(status: Status) {
+    const newTodoMainButton = document.createElement('button');
+
+    switch (status) {
+      case Status.ACTIVE:
+        {
+          newTodoMainButton.setAttribute('aria-label', 'Press to mark to do as finished.');
+          newTodoMainButton.dataset.buttonRole = 'finish';
+          const newTodoMainButtonImage = document.createElement('img');
+          newTodoMainButtonImage.src = './icons/icon-checkmark.svg';
+          newTodoMainButtonImage.alt = 'Image of a checkmark.';
+          newTodoMainButton.appendChild(newTodoMainButtonImage);
+        }
+        break;
+
+      case Status.FINISHED:
+        {
+          newTodoMainButton.setAttribute('aria-label', 'Press to mark to do in progress.');
+          newTodoMainButton.dataset.buttonRole = 'progress';
+          const newTodoMainButtonImage = document.createElement('img');
+          newTodoMainButtonImage.src = './icons/icon-clock.svg';
+          newTodoMainButtonImage.alt = 'Image of a clock.';
+          newTodoMainButton.appendChild(newTodoMainButtonImage);
+        }
+        break;
+    }
+
+    return newTodoMainButton;
+  }
+}
+
+class TodoItemDeleteButton {
+  static render() {
     const newTodoButtonDelete = document.createElement('button');
     newTodoButtonDelete.setAttribute('aria-label', 'Press to delete to do.');
     newTodoButtonDelete.dataset.buttonRole = 'delete';
@@ -89,18 +85,48 @@ class TodoItem {
     newTodoImageDelete.alt = 'Image of a trash bin.';
     newTodoButtonDelete.appendChild(newTodoImageDelete);
 
+    return newTodoButtonDelete;
+  }
+}
+
+class TodoItem {
+  id: number;
+  text: string;
+  status: Status;
+
+  constructor(newTodoData: Todo) {
+    this.id = newTodoData.id;
+    this.text = newTodoData.text;
+    this.status = newTodoData.status;
+  }
+
+  static render(newTodoData: Todo) {
+    const newTodoLi = document.createElement('li');
+    newTodoLi.classList.toggle('todo-list__item');
+    newTodoLi.dataset.id = newTodoData.id.toString();
+
+    const newTodoStatus = TodoItemStatus.render(newTodoData.status);
+
+    const newTodoContent = document.createElement('div');
+    newTodoContent.classList.toggle('todo-list__item-content');
+
+    const newTodoSpan = document.createElement('span');
+    newTodoSpan.appendChild(document.createTextNode(newTodoData.text));
+    newTodoContent.appendChild(newTodoSpan);
+    const newTodoActions = document.createElement('div');
+    newTodoActions.classList.toggle('todo-list__item-actions');
+    const newTodoMainButton = TodoItemMainButton.render(newTodoData.status);
+
+    newTodoActions.appendChild(newTodoMainButton);
+    const newTodoButtonDelete = TodoItemDeleteButton.render();
     newTodoActions.appendChild(newTodoButtonDelete);
 
     newTodoContent.appendChild(newTodoActions);
 
     newTodoLi.appendChild(newTodoContent);
+    newTodoLi.prepend(newTodoStatus);
 
     return newTodoLi;
-  }
-
-  render() {
-    const todoListElement = document.getElementById('todoList') as HTMLUListElement;
-    // todoListElement.appendChild(this.createElement());
   }
 }
 
@@ -112,6 +138,7 @@ class TodoList {
       this.todos = this.loadTodosFromLocalStorage();
     }
     this.connectAddTodoButton();
+    this.connectDeleteTodoButton();
     this.render();
     console.log(this.todos);
   }
@@ -142,22 +169,53 @@ class TodoList {
 
     addTodoInput.value = '';
 
-    const todoItemElement = TodoItem.createElement(newTodoData);
+    const todoItemElement = TodoItem.render(newTodoData);
     todoListElement.appendChild(todoItemElement);
   }
 
   connectAddTodoButton() {
-    const addTodoButton = document.getElementById('addTodoButton') as HTMLButtonElement;
-    addTodoButton.addEventListener('click', (event) => {
+    const addTodoForm = document.getElementById('addTodoForm') as HTMLFormElement;
+    addTodoForm.addEventListener('submit', (event) => {
       event.preventDefault();
       this.addNewTodo();
     });
   }
 
+  deleteTodo(event) {
+    const target = event.target;
+
+    if (target.tagName === 'BUTTON' && target.dataset.buttonRole === 'delete') {
+      const targetLi = target.closest('li');
+
+      this.todos = this.todos.filter((todo) => todo.id !== +targetLi.dataset.id);
+
+      this.saveTodosToLocalStorage(this.todos);
+
+      targetLi.parentElement.removeChild(targetLi);
+    }
+  }
+
+  connectDeleteTodoButton() {
+    const todoListElement = document.getElementById('todoList') as HTMLUListElement;
+    todoListElement.addEventListener('click', this.deleteTodo.bind(this));
+  }
+
+  switchStatus(todoId: number) {
+    const targetTodo = this.todos.find((todo) => todo.id === todoId);
+    if (targetTodo.status === Status.ACTIVE) {
+      targetTodo.status = Status.FINISHED;
+    } else if (targetTodo.status === Status.FINISHED) {
+      targetTodo.status = Status.ACTIVE;
+    }
+    this.saveTodosToLocalStorage(this.todos);
+  }
+
   render() {
     const todoListElement = document.getElementById('todoList') as HTMLUListElement;
     this.todos.forEach((todo) => {
-      const todoItemElement = TodoItem.createElement(todo);
+      const todoItemElement = TodoItem.render(todo);
+      const todoItemElementMainButton = todoItemElement.lastElementChild.lastElementChild.firstElementChild;
+      todoItemElementMainButton.addEventListener('click', () => this.switchStatus(todo.id));
       todoListElement.appendChild(todoItemElement);
     });
   }
@@ -165,7 +223,7 @@ class TodoList {
 
 class App {
   static init() {
-    const todoList = new TodoList();
+    new TodoList();
   }
 }
 
