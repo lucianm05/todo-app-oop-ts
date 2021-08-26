@@ -231,7 +231,7 @@ class TodoList {
     }
   }
 
-  renderTodoItems(todo: Todo, todoListElement) {
+  renderTodoItems(todo: Todo, todoListElement: HTMLUListElement) {
     const todoItemElement = TodoItem.render(todo);
     const todoItemElementMainButton = todoItemElement.lastElementChild.lastElementChild.firstElementChild;
     todoItemElementMainButton.addEventListener('click', () => this.switchTodoStatus(todo.id));
